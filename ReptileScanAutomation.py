@@ -12,6 +12,7 @@ from pathlib import Path
 import creds
 import time
 import os
+import pandas as pd
 import ctypes  # An included library with Python install.
 
 chrome_options = webdriver.ChromeOptions()
@@ -23,6 +24,7 @@ browser = webdriver.Chrome("chromedriver.exe")
 print("Opening browser")
 
 # open reptilescan.com using get() method
+# https://login.reptilescan.com/Events/318430/New?category=feedings
 browser.get('https://login.reptilescan.com/')
 
 # get username and password
