@@ -1,0 +1,322 @@
+Option Explicit
+
+Sub SnakeFeeding()
+'
+' SnakeFeeding Macro
+'
+
+Dim lastRow As Long
+
+Application.ScreenUpdating = False
+Application.DisplayAlerts = False
+
+    Sheets(1).Copy After:=Worksheets(1)
+    
+    Sheets(2).Activate
+    Sheets(2).Name = "Calc Sheet"
+    
+    With Sheets(2)
+
+        'Filter dead
+        Range("A1").AutoFilter Field:=15, Criteria1:="TRUE"
+        
+        'Delete Rows
+        Application.DisplayAlerts = False
+        Range("A2:G1000").SpecialCells(xlCellTypeVisible).Delete
+        Application.DisplayAlerts = True
+        
+        'Clear Filter
+        On Error Resume Next
+          .ShowAllData
+        On Error GoTo 0
+        
+        'Filter sold
+         Range("A1").AutoFilter Field:=58, Criteria1:="TRUE"
+        
+       'Delete Rows
+        Application.DisplayAlerts = False
+          Range("A2:G1000").SpecialCells(xlCellTypeVisible).Delete
+        Application.DisplayAlerts = True
+        
+        'Clear Filter
+        On Error Resume Next
+          .ShowAllData
+        On Error GoTo 0
+        
+        .AutoFilterMode = False
+        
+        Range("B:X,AA:AB,AD:AD,AF:AK,AN:BP").EntireColumn.Delete
+    
+        Columns("D:D").Select
+        Selection.Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+        Columns("C:C").Select
+        Selection.TextToColumns Destination:=Range("C1"), DataType:=xlFixedWidth, _
+            FieldInfo:=Array(Array(0, 1), Array(1, 9), Array(3, 1)), TrailingMinusNumbers:= _
+            True
+        Range("C1").Select
+        ActiveCell.FormulaR1C1 = "Amount"
+        Range("D1").Select
+        ActiveCell.FormulaR1C1 = "Food"
+        Range("D2").Select
+    
+        lastRow = Sheets("Calc Sheet").Range("G" & .Rows.Count).End(xlUp).Row
+    
+    
+        'Fill in the initial formats
+        Range("I1").Value = "Today"
+
+        'Range("H2").Formula = "=Today()"
+        Range("I2").Value = Date
+        Range("J1").Value = "TimetoFeed"
+        Range("J2").Formula = "=IF((K2<I2+L2),""y"",""n"")"
+        Range("K1").Value = "Date"
+        Range("K2").Formula = "=E2+B2"
+        Range("L1").Value = "Add Days"
+        Range("L2").Formula = "2"
+        Range("M1").Value = "Next Feeding"
+        Range("M2").Formula = "=E2+B2"
+        
+        'AutoFill Down
+        Range("I2:M2").AutoFill Range("I2:M" & Range("A2").End(xlDown).Row)
+        
+        Range("I2:I" & lastRow).Value = Date
+        
+        'Set Add days to 2 for all rows
+        Range("L2:L" & Range("B2").End(xlDown).Row).Value = 2
+        
+        Columns("E:E").Select
+        Selection.Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+        Columns("D:D").Select
+        Selection.TextToColumns Destination:=Range("D1"), DataType:=xlDelimited, _
+            TextQualifier:=xlDoubleQuote, ConsecutiveDelimiter:=False, Tab:=False, _
+            Semicolon:=False, Comma:=False, Space:=False, Other:=True, OtherChar _
+            :="-", FieldInfo:=Array(Array(1, 1), Array(2, 1)), TrailingMinusNumbers:=True
+            
+        ' Name label
+        Range("E1").Value = "Size"
+        
+        Dim Cell As Variant
+        
+        For Each Cell In Range("D2:E" & lastRow)
+            Cell.Value = Trim(Cell)
+        Next Cell
+        
+        Application.AddCustomList ListArray:=Array("Pinkie", "Fuzzie", "Pup", "Weaned", _
+        "S", "M", "L", "XL", "Jumbo")
+        ActiveWorkbook.Worksheets("Calc Sheet").Sort.SortFields.Clear
+        ActiveWorkbook.Worksheets("Calc Sheet").Sort.SortFields.Add2 Key:=Range("D2:D" & lastRow) _
+            , SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
+        ActiveWorkbook.Worksheets("Calc Sheet").Sort.SortFields.Add2 Key:=Range("E2:E" & lastRow) _
+            , SortOn:=xlSortOnValues, Order:=xlAscending, CustomOrder:= _
+            "Pinkie,Fuzzie,Pup,Weaned,S,M,L,XL,Jumbo", DataOption:=xlSortNormal
+        With ActiveWorkbook.Worksheets("Calc Sheet").Sort
+            .SetRange Range("A1:N" & lastRow)
+            .Header = xlYes
+            .MatchCase = False
+            .Orientation = xlTopToBottom
+            .SortMethod = xlPinYin
+            .Apply
+        End With
+            
+        Columns.AutoFit
+    
+    End With
+    
+    pivotCreate
+    
+    'ActiveWorkbook.SaveCopyAs "C:\Users\xboxf\Documents\Automations\reptilefeedings.xlsx"
+
+    createUploadSheet
+    
+    Sheets("Feedings").Activate
+
+Application.ScreenUpdating = True
+Application.DisplayAlerts = True
+
+
+End Sub
+
+Sub createUploadSheet()
+
+Dim lastRow As Long
+
+    Sheets("Calc Sheet").Copy After:=Sheets(Sheets.Count)
+
+    ActiveSheet.Name = "Upload"
+    
+    'Copy and Paste Sheet as Values
+    Sheets("Upload").Cells.Copy
+    Sheets("Upload").Cells.PasteSpecial Paste:=xlPasteValues
+    Application.CutCopyMode = False
+    
+    With Sheets("Upload")
+
+        .AutoFilterMode = False
+
+        ' Delete columns that are not needed
+        Range("B:B,F:F,I:I,L:O").EntireColumn.Delete
+        
+        ' Get lastRow
+        lastRow = Sheets("Calc Sheet").Range("A" & .Rows.Count).End(xlUp).Row
+        
+        'Columns("D:D").Select
+        'Selection.Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+        'Columns("C:C").Select
+        'Selection.TextToColumns Destination:=Range("C1"), DataType:=xlDelimited, _
+         '   TextQualifier:=xlDoubleQuote, ConsecutiveDelimiter:=False, Tab:=False, _
+         '   Semicolon:=False, Comma:=False, Space:=False, Other:=True, OtherChar _
+        '    :="-", FieldInfo:=Array(Array(1, 1), Array(2, 1)), TrailingMinusNumbers:=True
+        
+        ' Clear Filter
+        On Error Resume Next
+          .ShowAllData
+        On Error GoTo 0
+        
+        ' Filter all that are not ready to eat
+        Range("A1").AutoFilter Field:=8, Criteria1:="<>y"
+
+        ' Delete Time to feed=n
+        Application.DisplayAlerts = False
+          Range("A2:G" & lastRow).SpecialCells(xlCellTypeVisible).Delete
+        Application.DisplayAlerts = True
+        
+        ' Clear Filter
+        On Error Resume Next
+          .ShowAllData
+        On Error GoTo 0
+    
+        .AutoFilterMode = False
+    
+        'Fill in the initial formats
+        Range("I1").Value = "Date"
+        Range("I2").Formula = "=TEXT(G2,""mm/dd/yyyy"")&"" ""&TEXT(G2,""hh:mm"")"
+        Range("D1").Value = "Size"
+        
+        Dim Cell As Variant
+        
+        For Each Cell In Range("C2:D" & lastRow)
+            Cell.Value = Trim(Cell)
+        Next Cell
+ 
+        
+        'AutoFill Down
+        Range("I2:I2").AutoFill Range("I2:I" & Range("A2").End(xlDown).Row)
+        
+        'Application.AddCustomList ListArray:=Array("Pinkie", "Fuzzie", "Pup", "Weaned", _
+        '"S", "M", "L", "XL", "Jumbo")
+        ActiveWorkbook.Worksheets("Upload").Sort.SortFields.Clear
+        ActiveWorkbook.Worksheets("Upload").Sort.SortFields.Add2 Key:=Range("C2:C" & lastRow) _
+            , SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
+        ActiveWorkbook.Worksheets("Upload").Sort.SortFields.Add2 Key:=Range("D2:D" & lastRow) _
+            , SortOn:=xlSortOnValues, Order:=xlAscending, CustomOrder:= _
+            "Pinkie,Fuzzie,Pup,Weaned,S,M,L,XL,Jumbo", DataOption:=xlSortNormal
+        With ActiveWorkbook.Worksheets("Upload").Sort
+            .SetRange Range("A1:I" & lastRow)
+            .Header = xlYes
+            .MatchCase = False
+            .Orientation = xlTopToBottom
+            .SortMethod = xlPinYin
+            .Apply
+        End With
+        
+    
+        Columns.AutoFit
+        
+            
+    End With
+
+End Sub
+
+Sub pivotCreate()
+'
+' pivoCtreate Macro
+'
+
+'
+Dim PivotData As Worksheet
+Dim PTCache As PivotCache
+Dim PT As PivotTable
+
+
+   On Error GoTo pivotCreate_Error
+
+Set PivotData = Sheets("Calc Sheet")
+ 
+Sheets.Add After:=Sheets(Sheets.Count)
+ActiveSheet.Name = "Feedings"
+
+Sheets("Calc Sheet").Activate
+Range("A1:M1").Select
+
+    'Create the Cache
+    Set PTCache = ActiveWorkbook.PivotCaches.Create(SourceType:=xlDatabase, _
+        SourceData:=Range(Selection, Selection.End(xlDown)))
+
+    'Select the destination sheet
+    Sheets("Feedings").Select
+
+    'Create the Pivot table
+    Set PT = ActiveSheet.PivotTables.Add(PivotCache:=PTCache, _
+        TableDestination:=Range("A2"), TableName:="Feedings")
+
+    ActiveWorkbook.ShowPivotTableFieldList = True
+
+    'Adding fields
+    With PT
+
+        With .PivotFields("Food")
+            .Orientation = xlRowField
+            .Position = 1
+        End With
+        
+        With .PivotFields("Size")
+            .Orientation = xlRowField
+            .Position = 2
+        End With
+
+        With .PivotFields("TimetoFeed")
+            .Orientation = xlPageField
+            .Position = 1
+        End With
+
+        With .PivotFields("Amount")
+            .Orientation = xlDataField
+            .Position = 1
+            .Caption = " Amount"
+            .Function = xlSum
+        End With
+
+
+        'Adjusting some settings
+        .RowGrand = False
+        .DisplayFieldCaptions = True
+        .HasAutoFormat = False
+
+        'Improving the layout
+        '.TableStyle2 = "PivotStyleMedium9"
+        '.ShowTableStyleRowStripes = True
+        '.ShowTableStyleColumnStripes = True
+        
+        .PivotFields("TimetoFeed").ClearAllFilters
+        .PivotFields("TimetoFeed").CurrentPage = "y"
+
+    End With
+
+    With ActiveSheet
+        'Adjusting columns width
+        .Columns("A:M").ColumnWidth = 16
+        .Range("A2:M2").HorizontalAlignment = xlCenter
+    End With
+
+    ActiveWorkbook.ShowPivotTableFieldList = False
+
+   On Error GoTo 0
+   Exit Sub
+
+pivotCreate_Error:
+    MsgBox "Error " & Err.Number & " (" & Err.Description & ") in procedure pivotCreate of Module Pivot"
+    
+End Sub
+
+
+
